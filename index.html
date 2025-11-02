@@ -3,70 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cek Lokasi Client dan Simpan Data (Firebase)</title>
+    <title>Cek Lokasi Client dan Simpan Data (Aman & Akurat)</title>
+    <!-- Memuat Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 50px;
-            background-color: #f4f4f9;
+        /* Mengatur font utama menjadi Inter */
+        body { font-family: 'Inter', sans-serif; }
+        .spinner {
+            border-top-color: #f97316; /* Orange-500 */
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
         }
-        h1 {
-            color: #333;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        #result {
-            margin: 30px auto;
-            padding: 25px;
-            border: 1px solid #ddd;
-            display: inline-block;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-        }
-        .success {
-            color: #28a745;
-            font-weight: bold;
-        }
-        .error {
-            color: #dc3545;
-            font-weight: bold;
-        }
-        .loading {
-            color: #ff9800; /* Warna oranye untuk loading */
+        @-webkit-keyframes spin {
+            to { -webkit-transform: rotate(360deg); }
         }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     <script>
-        // PASTIKAN ANDA MENGGANTI INI DENGAN KONFIGURASI PROYEK FIREBASE ANDA
-        const firebaseConfig = {
-            apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng",
-            authDomain: "lokasi-client-tyar.firebaseapp.com",
-            projectId: "lokasi-client-tyar",
-            storageBucket: "lokasi-client-tyar.appspot.com",
-            messagingSenderId: "53755341759",
-            appId: "1:53755341759:web:c67c006b9b304c442e97f1"
-        };
-        
         // ====================================================================
-        // GANTI INI DENGAN KUNCI API GOOGLE MAPS ANDA YANG SEBENARNYA!
-        // Kunci ini didapatkan dari Google Cloud Console dan harus mengaktifkan 'Geocoding API'.
+        // Konfigurasi Kunci API (Disembunyikan)
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+        // HARAP GANTI DENGAN KUNCI GOOGLE MAPS ANDA YANG SUDAH DIAKTIFKAN GEOCODING API-nya!
         const GOOGLE_MAPS_API_KEY = "AIzaSyAuObjcNZrJjdfrRN1c-sSwr0qGktoRgDE"; 
         // ====================================================================
 
 
         // Inisialisasi Firebase dan Firestore
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        let db;
+        if (Object.keys(firebaseConfig).length > 0) {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+        } else {
+            console.error("Konfigurasi Firebase tidak tersedia.");
+        }
     </script>
 </head>
-<body>
+<body class="bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center min-h-screen p-4">
 
-    <h1>Aplikasi Cek Lokasi Anda</h1>
-    <div id="result">
-        Menunggu izin lokasi. Mohon izinkan pop-up browser.
+    <!-- Kontainer Utama Card -->
+    <div class="bg-white shadow-2xl rounded-3xl p-6 md:p-10 max-w-xl w-full transform transition duration-500 hover:scale-[1.01] hover:shadow-3xl border border-gray-100">
+        
+        <header class="text-center mb-8">
+            <div class="flex justify-center items-center mb-2">
+                <!-- Ikon GPS SVG -->
+                <svg class="w-10 h-10 text-indigo-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <h1 class="text-3xl font-extrabold text-gray-800">Geolocation Tester</h1>
+            </div>
+            <p class="text-gray-500 text-sm">Cek, simpan, dan ukur akurasi lokasi perangkat Anda.</p>
+        </header>
+        
+        <!-- Area Hasil -->
+        <div id="result" class="text-gray-600 text-center min-h-[150px] flex items-center justify-center">
+            Menunggu izin lokasi. Mohon izinkan pop-up browser.
+        </div>
+        
+        <p class="text-xs text-gray-400 mt-6 text-center border-t pt-4">Firebase Key disembunyikan. Google Maps API Key tetap diperlukan untuk Reverse Geocoding.</p>
     </div>
 
     <script>
@@ -74,43 +74,43 @@
 
         // Fungsi untuk mendapatkan Alamat Jalan/Kota dari Lat/Lon (Reverse Geocoding)
         async function getAddressFromLatLng(lat, lng) {
-            if (GOOGLE_MAPS_API_KEY === "YOUR_GOOGLE_MAPS_API_KEY") {
-                console.error("GOOGLE_MAPS_API_KEY belum diatur. Reverse Geocoding dilewati.");
-                return { fullAddress: "Error: API Key Belum Diatur", cityOrDistrict: "Error" };
+            if (GOOGLE_MAPS_API_KEY === "AIzaSyAuObjcNZrJjdfrRN1c-sSwr0qGktoRgDE") { 
+                console.warn("GOOGLE_MAPS_API_KEY masih menggunakan placeholder. Reverse Geocoding mungkin gagal.");
             }
 
             const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
             
             try {
                 const response = await fetch(url);
+
+                if (!response.ok) {
+                    let errorMessage = `API Error: ${response.status}`;
+                    return { fullAddress: errorMessage, cityOrDistrict: 'Error' };
+                }
+
                 const data = await response.json();
 
                 if (data.status === 'OK' && data.results.length > 0) {
-                    // Mengambil alamat yang paling spesifik (biasanya result[0])
                     const fullAddress = data.results[0].formatted_address;
-                    
-                    // Anda bisa mencoba mengambil kota/kabupaten spesifik dari component_address
-                    let cityOrDistrict = fullAddress; // Default ke alamat lengkap
-                    
+                    let cityOrDistrict = fullAddress;
                     const components = data.results[0].address_components;
                     
-                    // Mencari kota/kabupaten
                     for (const component of components) {
                         if (component.types.includes("locality")) {
                             cityOrDistrict = component.long_name;
                             break;
                         }
                         if (component.types.includes("administrative_area_level_2")) {
-                            cityOrDistrict = component.long_name; // Level 2 seringkali adalah Kabupaten/Kota
+                            cityOrDistrict = component.long_name;
                         }
                     }
 
                     return { fullAddress, cityOrDistrict };
                 } else {
-                    return { fullAddress: `Geocoding Error: ${data.status}`, cityOrDistrict: 'Tidak Diketahui' };
+                    return { fullAddress: `Geocoding Status: ${data.status} (Pesan: ${data.error_message || 'Tidak ada pesan'})`, cityOrDistrict: 'Tidak Diketahui' };
                 }
             } catch (error) {
-                console.error("Gagal melakukan Reverse Geocoding:", error);
+                console.error("Gagal melakukan Reverse Geocoding (Koneksi Gagal):", error);
                 return { fullAddress: 'Error: Gagal Fetch Geocoding', cityOrDistrict: 'Error' };
             }
         }
@@ -132,15 +132,13 @@
             return browser;
         }
 
-        // Fungsi utilitas untuk mengurai UserAgent dan mendapatkan nama OS yang lebih baik
+        // Fungsi utilitas untuk mengurai UserAgent dan mendapatkan nama OS yang lebih baik dan Tipe Perangkat
         function getOSNameAndDeviceType(userAgent) {
             let os = 'Unknown OS';
             let deviceType = 'Desktop';
             
             // Cek OS
             if (userAgent.match(/Windows NT 10.0/i)) os = 'Windows 10/11';
-            else if (userAgent.match(/Windows NT 6.3/i)) os = 'Windows 8.1';
-            else if (userAgent.match(/Windows NT 6.1/i)) os = 'Windows 7';
             else if (userAgent.match(/Android/i)) os = 'Android';
             else if (userAgent.match(/iPhone|iPad|iPod/i)) os = 'iOS/iPadOS';
             else if (userAgent.match(/Macintosh|Mac OS X/i)) os = 'Mac OS';
@@ -171,16 +169,21 @@
         // Fungsi utama untuk meminta Geolocation
         function getLocation() {
             if (navigator.geolocation) {
-                resultDiv.innerHTML = "<p class='loading'>Mencoba mendapatkan lokasi. Mohon izinkan pop-up browser.</p>";
+                // Tampilan Loading Awal (Menggunakan Tailwind dan Spinner SVG)
+                resultDiv.innerHTML = `<div class="p-4 bg-orange-50 text-orange-700 rounded-xl flex flex-col items-center justify-center h-full">
+                    <div class="spinner ease-linear rounded-full border-4 border-t-4 border-orange-200 h-10 w-10 mb-3"></div>
+                    <span class="font-semibold">Mencoba mendapatkan lokasi akurat...</span>
+                    <span class="text-xs mt-1 text-orange-600">Mohon izinkan pop-up browser.</span>
+                </div>`;
                 
                 navigator.geolocation.getCurrentPosition(showPosition, showError, {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
+                    enableHighAccuracy: true, 
+                    timeout: 7000, // Tambah waktu tunggu sedikit
                     maximumAge: 0
                 });
 
             } else {
-                resultDiv.innerHTML = "<p class='error'>Geolocation tidak didukung oleh browser ini.</p>";
+                resultDiv.innerHTML = `<div class='text-red-600 font-semibold p-4 bg-red-100 rounded-xl shadow'>❌ Geolocation tidak didukung oleh browser ini.</div>`;
             }
         }
 
@@ -188,14 +191,22 @@
         async function showPosition(position) {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+            const accuracy = position.coords.accuracy; 
             const timestamp = new Date().toISOString();
             
             // Tampilan saat proses pengiriman data
             resultDiv.innerHTML = `
-                <p class='success'>Lokasi berhasil ditemukan!</p>
-                <p><strong>Latitude:</strong> ${lat}</p>
-                <p><strong>Longitude:</strong> ${lon}</p>
-                <p class='loading'>Mengambil IP, Perangkat, dan Alamat Spesifik...</p>
+                <div class="p-6 bg-blue-50 text-blue-700 rounded-xl shadow-inner text-left border-l-4 border-blue-500">
+                    <p class="font-bold mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"></path></svg>
+                        Lokasi Ditemukan!
+                    </p>
+                    <p class="text-sm"><strong>Koordinat:</strong> ${lat.toFixed(5)}, ${lon.toFixed(5)}</p>
+                    <div class="mt-4 flex items-center">
+                        <div class="spinner ease-linear rounded-full border-2 border-t-2 border-blue-200 h-6 w-6 mr-3"></div>
+                        <span class="text-sm">Mengecek Alamat dan Menyimpan Data...</span>
+                    </div>
+                </div>
             `;
 
             // --- 1. Ambil Alamat IP ---
@@ -211,13 +222,31 @@
             const fullAddress = addressInfo.fullAddress;
             const cityOrDistrict = addressInfo.cityOrDistrict;
             
+            // === PEMERIKSAAN ERROR API ===
+            if (fullAddress.startsWith("API Error:") || fullAddress.includes("Geocoding Status: ZERO_RESULTS") || fullAddress.includes("API Key Invalid")) {
+                resultDiv.innerHTML = `
+                    <div class="bg-red-50 p-6 rounded-xl shadow-md border-l-4 border-red-500 text-left">
+                        <p class='text-red-700 font-bold text-lg mb-2 flex items-center'>
+                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Gagal Reverse Geocoding
+                        </p>
+                        <p class="text-sm text-red-600 mb-2">Error: **${fullAddress}**</p>
+                        <p class="text-xs text-red-800 mt-3 font-semibold">Tolong ganti variabel **GOOGLE_MAPS_API_KEY** dengan kunci yang valid.</p>
+                    </div>
+                `;
+                console.error("Geocoding API failed, stopping Firestore save.");
+                return; 
+            }
+            // =================================
+
             // Data yang akan disimpan di Firestore
             const dataLokasi = {
                 latitude: lat,
                 longitude: lon,
+                accuracy: accuracy, 
                 ipAddress: ipAddress, 
-                fullAddress: fullAddress,      // Data baru: Alamat Lengkap
-                cityOrDistrict: cityOrDistrict, // Data baru: Kota/Kabupaten
+                fullAddress: fullAddress,      
+                cityOrDistrict: cityOrDistrict, 
                 os_name: os,             
                 device_type: deviceType, 
                 browser_name: browserName, 
@@ -230,50 +259,108 @@
             db.collection("locations").add(dataLokasi)
             .then((docRef) => {
                 
-                const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=12`;
+                const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=15`;
+                
+                // Menentukan Tampilan Akurasi
+                let accuracyBg, accuracyTextColor, accuracyStatus;
+                if (accuracy < 50) {
+                    accuracyBg = 'bg-green-100 border-green-400';
+                    accuracyTextColor = 'text-green-700';
+                    accuracyStatus = 'Sangat Tinggi (GPS Akurat)';
+                } else if (accuracy < 500) {
+                    accuracyBg = 'bg-yellow-100 border-yellow-400';
+                    accuracyTextColor = 'text-yellow-700';
+                    accuracyStatus = 'Cukup Baik (Radius Wi-Fi/Seluler)';
+                } else {
+                    accuracyBg = 'bg-red-100 border-red-400';
+                    accuracyTextColor = 'text-red-700';
+                    accuracyStatus = 'Rendah (Hanya Berdasarkan IP Address)';
+                }
 
-                // Tampilan Berhasil Tersimpan (ditambah info Alamat Spesifik)
+
+                // Tampilan Berhasil Tersimpan (menggunakan Tailwind)
                 resultDiv.innerHTML = `
-                    <p class='success'>Lokasi berhasil ditemukan dan **Tersimpan di Firebase**!</p>
-                    <p><strong>Alamat Spesifik:</strong> ${fullAddress}</p>
-                    <p><strong>Kota/Kabupaten:</strong> ${cityOrDistrict}</p>
-                    <p><strong>Lat/Lon:</strong> ${lat.toFixed(5)}, ${lon.toFixed(5)}</p>
-                    <p><strong>IP Address:</strong> ${ipAddress}</p>
-                    <p><strong>Browser/OS:</strong> ${browserName} di ${os} (${deviceType})</p>
-                    <p><a href="${mapUrl}" target="_blank">Lihat di Google Maps</a></p>
-                    <p style="font-size: small; color: green;">ID Dokumen: ${docRef.id}</p>
+                    <div class="bg-white p-6 rounded-2xl shadow-xl border-t-4 border-indigo-500 text-left">
+                        <p class='text-indigo-600 font-extrabold text-xl mb-4 flex items-center'>
+                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.204A9.959 9.959 0 0012 3a9.957 9.957 0 00-7.817 3.784A1 1 0 005.42 7.784L12 18.001l6.58-10.217a1 1 0 00-.002-1.879z"></path></svg>
+                            Data Lokasi Disimpan!
+                        </p>
+                        
+                        <div class="space-y-3 text-sm text-gray-700">
+                            <div class="flex">
+                                <span class="font-semibold text-gray-900 w-28">Alamat:</span> <span class="flex-1">${fullAddress}</span>
+                            </div>
+                            <div class="flex">
+                                <span class="font-semibold text-gray-900 w-28">Koordinat:</span> <span class="flex-1">${lat.toFixed(6)}, ${lon.toFixed(6)}</span>
+                            </div>
+                            
+                            <div class="p-3 ${accuracyBg} rounded-lg border">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold ${accuracyTextColor}">Akurasi: ${accuracy.toFixed(2)} m</span>
+                                    <span class="text-xs font-semibold ${accuracyTextColor} px-2 py-1 rounded-full border border-current">${accuracyStatus}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex pt-2 border-t border-gray-100">
+                                <span class="font-semibold text-gray-900 w-28">IP Address:</span> <span class="flex-1">${ipAddress}</span>
+                            </div>
+                            <div class="flex">
+                                <span class="font-semibold text-gray-900 w-28">Perangkat:</span> <span class="flex-1">${browserName} (${deviceType})</span>
+                            </div>
+                            
+                            <a href="${mapUrl}" target="_blank" class="block w-full text-center mt-5 text-white bg-indigo-500 hover:bg-indigo-600 font-bold py-3 px-4 rounded-xl transition duration-150 shadow-lg hover:shadow-xl">
+                                📍 Lihat Lokasi di Google Maps
+                            </a>
+                            <p class="text-xs text-gray-400 pt-2 text-center">ID: ${docRef.id}</p>
+                        </div>
+                    </div>
                 `;
             })
             .catch((error) => {
                 // Tampilan Gagal Tersimpan
                 resultDiv.innerHTML = `
-                    <p class='error'>Gagal menyimpan lokasi ke Firebase: ${error.message}</p>
-                    <p>Pastikan koneksi internet, Aturan Firestore, dan Google Maps API Key sudah diatur dengan benar.</p>
+                    <div class="bg-red-50 p-6 rounded-2xl shadow-xl border-l-4 border-red-500 text-left">
+                        <p class='text-red-700 font-extrabold text-xl mb-3'>❌ Gagal Menyimpan ke Firebase</p>
+                        <p class="text-sm text-gray-700">Error: ${error.message}</p>
+                        <p class="text-xs mt-3 font-semibold">Pastikan koneksi internet dan **Aturan Firestore** sudah diatur ke **'if true'** (jika tidak menggunakan otentikasi).</p>
+                    </div>
                 `;
             });
         }
 
         function showError(error) {
             let errorMessage = "Terjadi Kesalahan.";
+            let iconSvg = `<svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
             switch(error.code) {
                 case error.PERMISSION_DENIED:
-                    errorMessage = "Anda menolak permintaan Geolocation.";
+                    errorMessage = "Anda **menolak** izin lokasi. Klik ikon gembok di address bar untuk mengizinkan.";
+                    iconSvg = `<svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>`;
                     break;
                 case error.POSITION_UNAVAILABLE:
-                    errorMessage = "Informasi lokasi tidak tersedia.";
+                    errorMessage = "Informasi lokasi tidak tersedia. Cek koneksi GPS/Wi-Fi Anda.";
                     break;
                 case error.TIMEOUT:
-                    errorMessage = "Permintaan untuk mendapatkan lokasi telah habis waktu (timeout).";
+                    errorMessage = "Permintaan lokasi **habis waktu**. Coba lagi, pastikan koneksi cepat.";
                     break;
                 case error.UNKNOWN_ERROR:
                     errorMessage = "Terjadi kesalahan yang tidak diketahui.";
                     break;
             }
-            resultDiv.innerHTML = `<p class='error'>Gagal mendapatkan lokasi: ${errorMessage}</p>`;
+            // Tampilan Gagal Mendapatkan Lokasi
+            resultDiv.innerHTML = `
+                <div class='bg-red-100 p-6 text-red-800 font-semibold rounded-2xl shadow border-l-4 border-red-500 text-left'>
+                    <p class="text-lg mb-2 flex items-center">${iconSvg} GAGAL MENDAPATKAN LOKASI</p>
+                    <p class="text-sm">${errorMessage}</p>
+                </div>
+            `;
         }
         
         // PANGGIL FUNGSI SAAT HALAMAN DIMUAT (Aksi Otomatis)
-        getLocation(); 
+        if (db) {
+             getLocation(); 
+        } else {
+             resultDiv.innerHTML = `<div class='text-red-600 font-semibold p-4 bg-red-100 rounded-xl shadow'>❌ Gagal Inisialisasi Firebase. Cek konfigurasi.</div>`;
+        }
     </script>
 
 </body>
