@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Lokasi Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            display: inline-block;
+            background-color: #f9f9f9;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Aplikasi Cek Lokasi Anda</h1>
+    <button onclick="getLocation()">Dapatkan Lokasi Saya</button>
+    <div id="result">
+        Klik tombol di atas untuk melihat lokasi Anda.
+    </div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+
+        function getLocation() {
+            // Periksa apakah browser mendukung Geolocation API
+            if (navigator.geolocation) {
+                resultDiv.innerHTML = "Mencoba mendapatkan lokasi...";
+                
+                // Ambil posisi saat ini
+                navigator.geolocation.getCurrentPosition(showPosition, showError, {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                });
+
+            } else {
+                resultDiv.innerHTML = "<p class='error'>Geolocation tidak didukung oleh browser ini.</p>";
+            }
+        }
+
+        function showPosition(position) {
+            // Callback jika sukses
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            resultDiv.innerHTML = `
+                <p class='success'>Lokasi berhasil ditemukan!</p>
+                <p><strong>Latitude:</strong> ${lat}</p>
+                <p><strong>Longitude:</strong> ${lon}</p>
+                <p><a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank">Lihat di Google Maps</a></p>
+            `;
+        }
+
+        function showError(error) {
+            // Callback jika terjadi error
+            let errorMessage = "Terjadi Kesalahan.";
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = "Anda menolak permintaan Geolocation.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = "Informasi lokasi tidak tersedia.";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = "Permintaan untuk mendapatkan lokasi telah habis waktu (timeout).";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    errorMessage = "Terjadi kesalahan yang tidak diketahui.";
+                    break;
+            }
+            resultDiv.innerHTML = `<p class='error'>Gagal mendapatkan lokasi: ${errorMessage}</p>`;
+        }
+    </script>
+
+</body>
+</html>
