@@ -65,6 +65,24 @@
     <script>
         const resultDiv = document.getElementById('result');
 
+        // Fungsi utilitas untuk mendapatkan Nama Browser
+        function getBrowserName(userAgent) {
+            let browser = 'Unknown Browser';
+            if (userAgent.indexOf("Chrome") > -1 && userAgent.indexOf("Edge") === -1) {
+                browser = 'Chrome';
+            } else if (userAgent.indexOf("Firefox") > -1) {
+                browser = 'Firefox';
+            } else if (userAgent.indexOf("Safari") > -1 && userAgent.indexOf("Chrome") === -1) {
+                browser = 'Safari';
+            } else if (userAgent.indexOf("Edge") > -1) {
+                browser = 'Edge';
+            } else if (userAgent.indexOf("Trident") > -1) {
+                browser = 'Internet Explorer';
+            }
+            // Di sini kita bisa menambahkan pengecekan untuk Browser lain seperti Opera, Samsung, dll.
+            return browser;
+        }
+
         // Fungsi utilitas untuk mengurai UserAgent dan mendapatkan nama OS yang lebih baik
         function getOSNameAndDeviceType(userAgent) {
             let os = 'Unknown OS';
@@ -135,19 +153,19 @@
             // --- 1. Ambil Alamat IP ---
             const ipAddress = await getClientIpAddress();
             
-            // --- 2. Ambil Info Perangkat & OS yang lebih deskriptif ---
+            // --- 2. Ambil Info Perangkat, OS & Browser yang lebih deskriptif ---
             const userAgent = navigator.userAgent || 'N/A';
-            const { os, deviceType } = getOSNameAndDeviceType(userAgent); // Menggunakan fungsi baru
+            const { os, deviceType } = getOSNameAndDeviceType(userAgent);
+            const browserName = getBrowserName(userAgent); // Menggunakan fungsi baru
             
-            // Catatan: navigator.appName dan navigator.platform tidak digunakan lagi karena kurang informatif
-
             // Data yang akan disimpan di Firestore
             const dataLokasi = {
                 latitude: lat,
                 longitude: lon,
                 ipAddress: ipAddress, 
-                os_name: os,             // Data baru: Nama OS yang sudah diurai
-                device_type: deviceType, // Data baru: Tipe Perangkat (Mobile/Tablet/Desktop)
+                os_name: os,             // Nama OS yang sudah diurai
+                device_type: deviceType, // Tipe Perangkat (Mobile/Tablet/Desktop)
+                browser_name: browserName, // Data baru: Nama Browser
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
                 browserTime: timestamp,
                 userAgent: userAgent 
@@ -160,13 +178,13 @@
                 // Format: https://maps.google.com/maps?q=latitude,longitude&z=zoomlevel
                 const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=12`;
 
-                // Tampilan Berhasil Tersimpan (ditambah info OS dan Tipe Perangkat)
+                // Tampilan Berhasil Tersimpan (ditambah info OS, Browser dan Tipe Perangkat)
                 resultDiv.innerHTML = `
                     <p class='success'>Lokasi berhasil ditemukan dan **Tersimpan di Firestore**!</p>
                     <p><strong>Latitude:</strong> ${lat}</p>
                     <p><strong>Longitude:</strong> ${lon}</p>
                     <p><strong>Alamat IP:</strong> ${ipAddress}</p>
-                    <p><strong>OS/Perangkat:</strong> ${os} (${deviceType})</p>
+                    <p><strong>Browser/OS:</strong> ${browserName} di ${os} (${deviceType})</p>
                     <p><a href="${mapUrl}" target="_blank">Lihat di Google Maps</a></p>
                     <p style="font-size: small; color: green;">ID Dokumen: ${docRef.id}</p>
                 `;
