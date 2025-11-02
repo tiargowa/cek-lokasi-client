@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Riwayat Lokasi</title>
+    <title>Admin Dashboard - Riwayat Lokasi & Peta</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,8 +11,15 @@
             padding: 20px;
             background-color: #f4f4f9;
         }
-        h1 {
+        h1, h2 {
             color: #333;
+        }
+        #map {
+            height: 450px; /* Tinggi untuk peta */
+            width: 100%;
+            margin: 30px auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         #history {
             margin: 30px auto;
@@ -53,6 +60,10 @@
         }
     </style>
 
+    <script async
+        src="https://maps.googleapis.com/maps/api/js?key=TEMPATKAN_API_KEY_ANDA_DI_SINI&callback=initMap">
+    </script>
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     <script>
@@ -69,6 +80,9 @@
         // Inisialisasi Firebase dan Firestore
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        
+        // Array global untuk menyimpan koordinat marker
+        let allMarkers = [];
     </script>
 </head>
 <body>
@@ -76,30 +90,70 @@
     <h1>Dashboard Admin Lokasi Klien</h1>
     <p>Menampilkan semua data lokasi yang tersimpan di Firestore.</p>
 
+    <div id="map"></div>
+
     <div id="history">
         Memuat data riwayat...
     </div>
 
     <script>
-        // FUNGSI UNTUK MENAMPILKAN RIWAYAT DATA DARI FIREBASE
+        
+        // FUNGSI INITI MAP (Dipanggil oleh Google Maps API setelah dimuat)
+        function initMap() {
+            // Cek apakah ada data lokasi
+            if (allMarkers.length === 0) {
+                document.getElementById('map').innerHTML = "<p style='text-align: center; padding-top: 200px;'>Tidak ada data lokasi untuk ditampilkan di peta.</p>";
+                return;
+            }
+
+            // Gunakan lokasi terakhir sebagai pusat peta (atau lokasi pertama jika dibalik)
+            const mapCenter = { lat: allMarkers[0].lat, lng: allMarkers[0].lng };
+            
+            // Inisialisasi Peta
+            const map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 12,
+                center: mapCenter,
+            });
+
+            // Tambahkan Marker untuk setiap lokasi
+            allMarkers.forEach((markerData, index) => {
+                new google.maps.Marker({
+                    position: markerData,
+                    map: map,
+                    title: `Lokasi #${allMarkers.length - index}`, // Penomoran terbalik dari yang terbaru
+                    label: (allMarkers.length - index).toString() // Marker label (angka)
+                });
+            });
+        }
+        
+        // FUNGSI UNTUK MENAMPILKAN RIWAYAT DATA DARI FIREBASE (DIUBAH)
         function loadHistory() {
             const historyDiv = document.getElementById('history');
             historyDiv.innerHTML = 'Memuat data...';
 
-            // Ambil SEMUA data, diurutkan berdasarkan waktu (timestamp)
             db.collection("locations").orderBy("timestamp", "desc").get()
             .then((querySnapshot) => {
                 let htmlContent = '';
+                allMarkers = []; // Bersihkan array marker
+                
                 if (querySnapshot.empty) {
                     htmlContent = '<p>Belum ada data lokasi tersimpan.</p>';
                 } else {
                     htmlContent = '<ul>';
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
-                        const lat = data.latitude ? data.latitude.toFixed(6) : 'N/A';
-                        const lon = data.longitude ? data.longitude.toFixed(6) : 'N/A';
+                        const lat = data.latitude;
+                        const lon = data.longitude;
                         
-                        // Coba format timestamp server
+                        // 1. Simpan koordinat untuk PETA
+                        if (lat && lon) {
+                            allMarkers.push({ lat: lat, lng: lon });
+                        }
+                        
+                        // 2. Format tampilan di Riwayat
+                        const formattedLat = lat ? lat.toFixed(6) : 'N/A';
+                        const formattedLon = lon ? lon.toFixed(6) : 'N/A';
+
                         let displayTime = 'Waktu tidak tersedia';
                         if (data.timestamp && data.timestamp.toDate) {
                             displayTime = data.timestamp.toDate().toLocaleString('id-ID', {
@@ -111,8 +165,8 @@
                         htmlContent += `
                             <li>
                                 <div class="data-info">
-                                    <strong>Lat/Lon:</strong> ${lat}, ${lon} 
-                                    (<a href="http://googleusercontent.com/maps.google.com/7${lat},${lon}" target="_blank">Lihat Peta</a>)
+                                    <strong>Lat/Lon:</strong> ${formattedLat}, ${formattedLon} 
+                                    (<a href="http://googleusercontent.com/maps.google.com/7${formattedLat},${formattedLon}" target="_blank">Lihat Peta</a>)
                                     <br>
                                     <span style="font-size: small; color: #333;">Browser/OS: ${data.userAgent}</span>
                                 </div>
@@ -126,13 +180,18 @@
                     htmlContent += '</ul>';
                 }
                 historyDiv.innerHTML = htmlContent;
+                
+                // Panggil initMap secara manual jika API sudah dimuat
+                if (typeof google !== 'undefined' && google.maps && allMarkers.length > 0) {
+                     initMap();
+                }
             })
             .catch((error) => {
                 historyDiv.innerHTML = `<p class='error'>Gagal memuat riwayat: ${error.message}</p>`;
             });
         }
         
-        // Panggil fungsi saat halaman dimuat
+        // Panggil fungsi untuk menampilkan riwayat saat halaman dimuat
         loadHistory(); 
     </script>
 
