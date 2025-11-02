@@ -3,73 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Riwayat Lokasi & Peta</title>
+    <title>Admin Dashboard - Riwayat Lokasi</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
             padding: 20px;
-            background-color: #f4f4f9;
+            background-color: #eef1f6;
+            margin: 0;
         }
-        h1, h2 {
-            color: #333;
+        .container {
+            max-width: 1100px; /* Lebar lebih luas untuk grid */
+            margin: 0 auto;
         }
-        #map {
-            height: 450px; /* Tinggi untuk peta */
-            width: 100%;
-            margin: 30px auto;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        #history {
-            margin: 30px auto;
-            max-width: 800px;
-            text-align: left;
-            padding: 20px;
-            border: 1px solid #ccc;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        #history ul {
-            list-style: none;
-            padding: 0;
-        }
-        #history li {
-            border-bottom: 1px dashed #eee;
-            padding: 10px 0;
+        header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
         }
-        #history li:last-child {
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        p {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+        }
+        
+        /* ---------------------------------- */
+        /* CSS untuk Layout GRID */
+        /* ---------------------------------- */
+        #history {
+            margin: 30px auto;
+            text-align: left;
+            padding: 0;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .data-header {
+            display: grid;
+            /* Kolom: Waktu (25%), Lokasi/Browser (50%), ID (25%) */
+            grid-template-columns: 1.5fr 3fr 1fr;
+            padding: 15px 20px;
+            background-color: #34495e;
+            color: white;
+            font-weight: bold;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        
+        .data-item {
+            display: grid;
+            grid-template-columns: 1.5fr 3fr 1fr;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ecf0f1;
+            align-items: center;
+        }
+        .data-item:last-child {
             border-bottom: none;
         }
-        .data-info {
-            flex-basis: 70%;
-        }
+
         .time-info {
-            flex-basis: 30%;
-            text-align: right;
-            font-size: small;
-            color: #6c757d;
+            font-size: 0.9em;
         }
-        .error {
-            color: #dc3545;
+        .location-details {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+        .link-peta a {
+            color: #3498db;
+            text-decoration: none;
             font-weight: bold;
         }
-    </style>
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
 
-<!-- <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNBNlvhYlWJ0hhFFV6RFAXTBbWbODJDbw&callback=initMap">
-</script> 
-     -->
+        /* CSS untuk Autentikasi */
+        #login-container {
+            padding: 50px;
+            margin-top: 50px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 50px auto;
+        }
+        .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+    </style>
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div id="login-container" style="display: block;">
+            <h2>Admin Dashboard</h2>
+            <p>Akses terbatas. Silakan masuk untuk melihat data.</p>
+            <button id="signInButton" style="background-color: #4285F4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; margin: 0 auto;">
+                <img src="https://img.icons8.com/color/16/000000/google-logo.png" style="margin-right: 10px;">
+                Sign In dengan Google
+            </button>
+        </div>
+        
+        <div id="dashboard-content" style="display: none;">
+            <header>
+                <div>
+                    <h1>Dashboard Admin Lokasi Klien</h1>
+                    <p>Menampilkan semua data lokasi yang tersimpan di Firestore.</p>
+                </div>
+                <button id="signOutButton" class="logout-btn">Logout</button>
+            </header>
+
+            <div id="history">
+                Memuat data riwayat...
+            </div>
+            
+        </div>
+    </div>
+
     <script>
         // KONFIGURASI PROYEK FIREBASE ANDA
         const firebaseConfig = {
-            apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng",
+            // 🚨 GANTI KEY INI DENGAN KUNCI "Browser key" TERBARU DARI GOOGLE CLOUD CONSOLE
+            apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng", // ⬅️ KUNCI INI HARUS DIGANTI!
             authDomain: "lokasi-client-tyar.firebaseapp.com",
             projectId: "lokasi-client-tyar",
             storageBucket: "lokasi-client-tyar.appspot.com",
@@ -77,126 +151,121 @@
             appId: "1:53755341759:web:c67c006b9b304c442e97f1"
         };
 
-        // Inisialisasi Firebase dan Firestore
+        // Inisialisasi Firebase, Firestore, dan Auth
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
+        const provider = new firebase.auth.GoogleAuthProvider();
         
-        // Array global untuk menyimpan koordinat marker
-        let allMarkers = [];
-    </script>
-</head>
-<body>
-
-    <h1>Dashboard Admin Lokasi Klien</h1>
-    <p>Menampilkan semua data lokasi yang tersimpan di Firestore.</p>
-
-    <div id="map"></div>
-
-    <div id="history">
-        Memuat data riwayat...
-    </div>
-
-    <script>
-        
-        // FUNGSI INITI MAP (Dipanggil oleh Google Maps API setelah dimuat)
-        function initMap() {
-            // Peta yang berhasil dimuat
-
-            // Cek apakah ada data lokasi
-            if (allMarkers.length === 0) {
-                document.getElementById('map').innerHTML = "<p style='text-align: center; padding-top: 200px;'>Tidak ada data lokasi untuk ditampilkan di peta.</p>";
-                return;
-            }
-
-            // Gunakan lokasi terakhir sebagai pusat peta (atau lokasi pertama jika dibalik)
-            const mapCenter = { lat: allMarkers[0].lat, lng: allMarkers[0].lng };
-            
-            // Inisialisasi Peta
-            const map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 12,
-                center: mapCenter,
-            });
-
-            // Tambahkan Marker untuk setiap lokasi
-            allMarkers.forEach((markerData, index) => {
-                new google.maps.Marker({
-                    position: markerData,
-                    map: map,
-                    title: `Lokasi #${allMarkers.length - index}`, // Penomoran terbalik dari yang terbaru
-                    label: (allMarkers.length - index).toString() // Marker label (angka)
-                });
-            });
-        }
-        
-        // FUNGSI UNTUK MENAMPILKAN RIWAYAT DATA DARI FIREBASE (DIUBAH)
+        // FUNGSI loadHistory: Memuat data dan menampilkan dalam GRID
         function loadHistory() {
             const historyDiv = document.getElementById('history');
-            historyDiv.innerHTML = 'Memuat data...';
+            
+            // Tampilan loading awal yang lebih baik
+            historyDiv.innerHTML = '<div class="data-header"><div>Waktu Server</div><div>Lokasi & Browser</div><div>ID Dokumen</div></div><div style="padding: 20px; text-align: center;">Memuat data...</div>';
 
             db.collection("locations").orderBy("timestamp", "desc").get()
             .then((querySnapshot) => {
-                let htmlContent = '';
-                allMarkers = []; // Bersihkan array marker
+                let htmlContent = '<div class="data-header"><div>Waktu Server</div><div>Lokasi & Browser</div><div>ID Dokumen</div></div>';
                 
                 if (querySnapshot.empty) {
-                    htmlContent = '<p>Belum ada data lokasi tersimpan.</p>';
+                    htmlContent += '<div style="padding: 20px; text-align: center;">Belum ada data lokasi tersimpan.</div>';
                 } else {
-                    htmlContent = '<ul>';
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
                         const lat = data.latitude;
                         const lon = data.longitude;
                         
-                        // 1. Simpan koordinat untuk PETA
-                        if (lat && lon) {
-                            allMarkers.push({ lat: lat, lng: lon });
-                        }
-                        
-                        // 2. Format tampilan di Riwayat
+                        // Format tampilan di Riwayat
                         const formattedLat = lat ? lat.toFixed(6) : 'N/A';
                         const formattedLon = lon ? lon.toFixed(6) : 'N/A';
 
-                        let displayTime = 'Waktu tidak tersedia';
+                        let displayTime = 'N/A';
                         if (data.timestamp && data.timestamp.toDate) {
                             displayTime = data.timestamp.toDate().toLocaleString('id-ID', {
                                 year: 'numeric', month: 'short', day: 'numeric',
                                 hour: '2-digit', minute: '2-digit', second: '2-digit'
                             });
                         }
+
+                        // URL Google Maps STANDAR yang berfungsi (Fix untuk error 404)
+                        const mapUrl = `http://maps.google.com/?q=${formattedLat},${formattedLon}`;
                         
+                        // MENGGUNAKAN STRUKTUR GRID
                         htmlContent += `
-                            <li>
-                                <div class="data-info">
-                                    <strong>Lat/Lon:</strong> ${formattedLat}, ${formattedLon} 
-                                    
-                                    (<a href="https://developers.google.com/maps/documentation/javascript/get-api-key5" target="_blank">Lihat Peta</a>)
-                                    
-                                    <br>
-                                    <span style="font-size: small; color: #333;">Browser/OS: ${data.userAgent}</span>
-                                </div>
+                            <div class="data-item">
                                 <div class="time-info">
-                                    <strong>Waktu Server:</strong> ${displayTime}<br>
-                                    ID: ${doc.id.substring(0, 8)}...
+                                    ${displayTime}
                                 </div>
-                            </li>
+                                
+                                <div class="location-details">
+                                    <strong>Lat/Lon:</strong> ${formattedLat}, ${formattedLon} 
+                                    <span class="link-peta">
+                                        (<a href="${mapUrl}" target="_blank">Lihat Peta</a>)
+                                    </span>
+                                    <span style="font-size: small; color: #6c757d;">Browser/OS: ${data.userAgent}</span>
+                                </div>
+                                
+                                <div class="id-info">
+                                    ${doc.id.substring(0, 8)}...
+                                </div>
+                            </div>
                         `;
                     });
-                    htmlContent += '</ul>';
                 }
                 historyDiv.innerHTML = htmlContent;
-                
-                // Panggil initMap secara manual jika API sudah dimuat
-                if (typeof google !== 'undefined' && google.maps && allMarkers.length > 0) {
-                    initMap();
-                }
             })
             .catch((error) => {
-                historyDiv.innerHTML = `<p class='error'>Gagal memuat riwayat: ${error.message}</p>`;
+                historyDiv.innerHTML = `<p class='error' style='text-align: center;'>Gagal memuat riwayat: ${error.message}</p>`;
             });
         }
         
-        // Panggil fungsi untuk menampilkan riwayat saat halaman dimuat
-        loadHistory(); 
+        // Logika Autentikasi
+        auth.onAuthStateChanged((user) => {
+            const dashboardContent = document.getElementById('dashboard-content');
+            const loginContainer = document.getElementById('login-container');
+
+            if (user) {
+                // User sudah login
+                dashboardContent.style.display = 'block';
+                loginContainer.style.display = 'none';
+                
+                // Muat data jika sudah login
+                loadHistory(); 
+
+            } else {
+                // User belum login
+                dashboardContent.style.display = 'none';
+                loginContainer.style.display = 'block';
+            }
+        });
+
+        // Event Listeners untuk Tombol Login/Logout
+        document.addEventListener('DOMContentLoaded', () => {
+            const signInButton = document.getElementById('signInButton');
+            const signOutButton = document.getElementById('signOutButton');
+
+            if (signInButton) {
+                signInButton.addEventListener('click', () => {
+                    auth.signInWithPopup(provider)
+                        .catch((error) => {
+                            // Error API Key Firebase Anda muncul di sini: auth/api-key-not-valid
+                            alert("Gagal Login: Firebase: Error (" + error.code + "). Mohon pastikan Kunci API Web Anda sudah benar.");
+                        });
+                });
+            }
+
+            if (signOutButton) {
+                signOutButton.addEventListener('click', () => {
+                    auth.signOut().then(() => {
+                        window.location.reload(); // Muat ulang halaman setelah logout
+                    }).catch((error) => {
+                        console.error("Logout Error:", error);
+                    });
+                });
+            }
+        });
+        
     </script>
 
 </body>
