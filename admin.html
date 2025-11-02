@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Riwayat Lokasi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
+        }
+        #history {
+            margin: 30px auto;
+            max-width: 800px;
+            text-align: left;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #history ul {
+            list-style: none;
+            padding: 0;
+        }
+        #history li {
+            border-bottom: 1px dashed #eee;
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        #history li:last-child {
+            border-bottom: none;
+        }
+        .data-info {
+            flex-basis: 70%;
+        }
+        .time-info {
+            flex-basis: 30%;
+            text-align: right;
+            font-size: small;
+            color: #6c757d;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script>
+        // KONFIGURASI PROYEK FIREBASE ANDA
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng",
+            authDomain: "lokasi-client-tyar.firebaseapp.com",
+            projectId: "lokasi-client-tyar",
+            storageBucket: "lokasi-client-tyar.appspot.com",
+            messagingSenderId: "53755341759",
+            appId: "1:53755341759:web:c67c006b9b304c442e97f1"
+        };
+
+        // Inisialisasi Firebase dan Firestore
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+</head>
+<body>
+
+    <h1>Dashboard Admin Lokasi Klien</h1>
+    <p>Menampilkan semua data lokasi yang tersimpan di Firestore.</p>
+
+    <div id="history">
+        Memuat data riwayat...
+    </div>
+
+    <script>
+        // FUNGSI UNTUK MENAMPILKAN RIWAYAT DATA DARI FIREBASE
+        function loadHistory() {
+            const historyDiv = document.getElementById('history');
+            historyDiv.innerHTML = 'Memuat data...';
+
+            // Ambil SEMUA data, diurutkan berdasarkan waktu (timestamp)
+            db.collection("locations").orderBy("timestamp", "desc").get()
+            .then((querySnapshot) => {
+                let htmlContent = '';
+                if (querySnapshot.empty) {
+                    htmlContent = '<p>Belum ada data lokasi tersimpan.</p>';
+                } else {
+                    htmlContent = '<ul>';
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const lat = data.latitude ? data.latitude.toFixed(6) : 'N/A';
+                        const lon = data.longitude ? data.longitude.toFixed(6) : 'N/A';
+                        
+                        // Coba format timestamp server
+                        let displayTime = 'Waktu tidak tersedia';
+                        if (data.timestamp && data.timestamp.toDate) {
+                            displayTime = data.timestamp.toDate().toLocaleString('id-ID', {
+                                year: 'numeric', month: 'short', day: 'numeric',
+                                hour: '2-digit', minute: '2-digit', second: '2-digit'
+                            });
+                        }
+                        
+                        htmlContent += `
+                            <li>
+                                <div class="data-info">
+                                    <strong>Lat/Lon:</strong> ${lat}, ${lon} 
+                                    (<a href="http://googleusercontent.com/maps.google.com/7${lat},${lon}" target="_blank">Lihat Peta</a>)
+                                    <br>
+                                    <span style="font-size: small; color: #333;">Browser/OS: ${data.userAgent}</span>
+                                </div>
+                                <div class="time-info">
+                                    <strong>Waktu Server:</strong> ${displayTime}<br>
+                                    ID: ${doc.id.substring(0, 8)}...
+                                </div>
+                            </li>
+                        `;
+                    });
+                    htmlContent += '</ul>';
+                }
+                historyDiv.innerHTML = htmlContent;
+            })
+            .catch((error) => {
+                historyDiv.innerHTML = `<p class='error'>Gagal memuat riwayat: ${error.message}</p>`;
+            });
+        }
+        
+        // Panggil fungsi saat halaman dimuat
+        loadHistory(); 
+    </script>
+
+</body>
+</html>
