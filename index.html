@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cek Lokasi Client</title>
+    <title>Cek Lokasi Client Otomatis</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -30,20 +30,18 @@
 <body>
 
     <h1>Aplikasi Cek Lokasi Anda</h1>
-    <button onclick="getLocation()">Dapatkan Lokasi Saya</button>
     <div id="result">
-        Klik tombol di atas untuk melihat lokasi Anda.
+        Menunggu izin lokasi...
     </div>
 
     <script>
         const resultDiv = document.getElementById('result');
 
         function getLocation() {
-            // Periksa apakah browser mendukung Geolocation API
             if (navigator.geolocation) {
-                resultDiv.innerHTML = "Mencoba mendapatkan lokasi...";
+                // Perintah getLocation() akan dieksekusi secara otomatis
+                resultDiv.innerHTML = "Mencoba mendapatkan lokasi. Mohon izinkan pop-up browser.";
                 
-                // Ambil posisi saat ini
                 navigator.geolocation.getCurrentPosition(showPosition, showError, {
                     enableHighAccuracy: true,
                     timeout: 5000,
@@ -56,19 +54,17 @@
         }
 
         function showPosition(position) {
-            // Callback jika sukses
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
             resultDiv.innerHTML = `
                 <p class='success'>Lokasi berhasil ditemukan!</p>
                 <p><strong>Latitude:</strong> ${lat}</p>
                 <p><strong>Longitude:</strong> ${lon}</p>
-                <p><a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank">Lihat di Google Maps</a></p>
+                <p><a href="http://googleusercontent.com/maps.google.com/6${lat},${lon}" target="_blank">Lihat di Google Maps</a></p>
             `;
         }
 
         function showError(error) {
-            // Callback jika terjadi error
             let errorMessage = "Terjadi Kesalahan.";
             switch(error.code) {
                 case error.PERMISSION_DENIED:
@@ -86,6 +82,9 @@
             }
             resultDiv.innerHTML = `<p class='error'>Gagal mendapatkan lokasi: ${errorMessage}</p>`;
         }
+        
+        // <<< BAGIAN BARU: PANGGIL FUNGSI SAAT HALAMAN DIMUAT >>>
+        getLocation(); 
     </script>
 
 </body>
