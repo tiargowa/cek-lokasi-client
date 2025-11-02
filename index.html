@@ -103,12 +103,17 @@
             // KIRIM DATA ke koleksi (tabel) 'locations' di Firestore
             db.collection("locations").add(dataLokasi)
             .then((docRef) => {
+                
+                // 🛑 BAGIAN YANG DIPERBAIKI: Menggunakan format URL Google Maps STANDAR dengan zoom level 12
+                // Format: https://maps.google.com/maps?q=latitude,longitude&z=zoomlevel
+                const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=12`;
+
                 // Tampilan Berhasil Tersimpan
                 resultDiv.innerHTML = `
                     <p class='success'>Lokasi berhasil ditemukan dan **Tersimpan di Firestore**!</p>
                     <p><strong>Latitude:</strong> ${lat}</p>
                     <p><strong>Longitude:</strong> ${lon}</p>
-                    <p><a href="http://googleusercontent.com/maps.google.com/7${lat},${lon}" target="_blank">Lihat di Google Maps</a></p>
+                    <p><a href="${mapUrl}" target="_blank">Lihat di Google Maps</a></p>
                     <p style="font-size: small; color: green;">ID Dokumen: ${docRef.id}</p>
                 `;
             })
