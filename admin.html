@@ -100,6 +100,8 @@
         
         // FUNGSI INITI MAP (Dipanggil oleh Google Maps API setelah dimuat)
         function initMap() {
+            // Peta yang berhasil dimuat
+
             // Cek apakah ada data lokasi
             if (allMarkers.length === 0) {
                 document.getElementById('map').innerHTML = "<p style='text-align: center; padding-top: 200px;'>Tidak ada data lokasi untuk ditampilkan di peta.</p>";
@@ -166,7 +168,9 @@
                             <li>
                                 <div class="data-info">
                                     <strong>Lat/Lon:</strong> ${formattedLat}, ${formattedLon} 
-                                    (<a href="http://googleusercontent.com/maps.google.com/7${formattedLat},${formattedLon}" target="_blank">Lihat Peta</a>)
+                                    
+                                    (<a href="https://developers.google.com/maps/documentation/javascript/get-api-key5" target="_blank">Lihat Peta</a>)
+                                    
                                     <br>
                                     <span style="font-size: small; color: #333;">Browser/OS: ${data.userAgent}</span>
                                 </div>
@@ -183,7 +187,7 @@
                 
                 // Panggil initMap secara manual jika API sudah dimuat
                 if (typeof google !== 'undefined' && google.maps && allMarkers.length > 0) {
-                     initMap();
+                    initMap();
                 }
             })
             .catch((error) => {
