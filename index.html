@@ -3,35 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cek Lokasi Client Otomatis</title>
+    <title>Cek Lokasi Client dan Simpan Data (Firebase)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 50px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
         }
         #result {
-            margin-top: 20px;
-            padding: 20px;
-            border: 1px solid #ccc;
+            margin: 30px auto;
+            padding: 25px;
+            border: 1px solid #ddd;
             display: inline-block;
-            background-color: #f9f9f9;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
         }
         .success {
-            color: green;
+            color: #28a745;
             font-weight: bold;
         }
         .error {
-            color: red;
+            color: #dc3545;
             font-weight: bold;
         }
     </style>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script>
+        // PASTIKAN ANDA MENGGANTI INI DENGAN KONFIGURASI PROYEK FIREBASE ANDA
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng",
+            authDomain: "lokasi-client-tyar.firebaseapp.com",
+            projectId: "lokasi-client-tyar",
+            storageBucket: "lokasi-client-tyar.appspot.com",
+            messagingSenderId: "53755341759",
+            appId: "1:53755341759:web:c67c006b9b304c442e97f1"
+        };
+
+        // Inisialisasi Firebase dan Firestore
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
 </head>
 <body>
 
     <h1>Aplikasi Cek Lokasi Anda</h1>
     <div id="result">
-        Menunggu izin lokasi...
+        Menunggu izin lokasi. Mohon izinkan pop-up browser.
     </div>
 
     <script>
@@ -56,12 +81,44 @@
         function showPosition(position) {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+            const timestamp = new Date().toISOString(); 
+
+            // Tampilan saat proses pengiriman data
             resultDiv.innerHTML = `
                 <p class='success'>Lokasi berhasil ditemukan!</p>
                 <p><strong>Latitude:</strong> ${lat}</p>
                 <p><strong>Longitude:</strong> ${lon}</p>
-                <p><a href="http://googleusercontent.com/maps.google.com/6${lat},${lon}" target="_blank">Lihat di Google Maps</a></p>
+                <p>Mencoba menyimpan ke Firebase...</p>
             `;
+
+            // Data yang akan disimpan di Firestore
+            const dataLokasi = {
+                latitude: lat,
+                longitude: lon,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Waktu server Firebase
+                browserTime: timestamp,
+                userAgent: navigator.userAgent // Info browser client
+            };
+
+            // KIRIM DATA ke koleksi (tabel) 'locations' di Firestore
+            db.collection("locations").add(dataLokasi)
+            .then((docRef) => {
+                // Tampilan Berhasil Tersimpan
+                resultDiv.innerHTML = `
+                    <p class='success'>Lokasi berhasil ditemukan dan **Tersimpan di Firestore**!</p>
+                    <p><strong>Latitude:</strong> ${lat}</p>
+                    <p><strong>Longitude:</strong> ${lon}</p>
+                    <p><a href="http://googleusercontent.com/maps.google.com/7${lat},${lon}" target="_blank">Lihat di Google Maps</a></p>
+                    <p style="font-size: small; color: green;">ID Dokumen: ${docRef.id}</p>
+                `;
+            })
+            .catch((error) => {
+                // Tampilan Gagal Tersimpan
+                resultDiv.innerHTML = `
+                    <p class='error'>Gagal menyimpan lokasi ke Firebase: ${error.message}</p>
+                    <p>Pastikan koneksi internet dan **Aturan Firestore** sudah diatur ke **'if true'**.</p>
+                `;
+            });
         }
 
         function showError(error) {
@@ -83,7 +140,7 @@
             resultDiv.innerHTML = `<p class='error'>Gagal mendapatkan lokasi: ${errorMessage}</p>`;
         }
         
-        // <<< BAGIAN BARU: PANGGIL FUNGSI SAAT HALAMAN DIMUAT >>>
+        // PANGGIL FUNGSI SAAT HALAMAN DIMUAT (Aksi Otomatis)
         getLocation(); 
     </script>
 
