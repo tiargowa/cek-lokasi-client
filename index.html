@@ -65,6 +65,30 @@
     <script>
         const resultDiv = document.getElementById('result');
 
+        // Fungsi utilitas untuk mengurai UserAgent dan mendapatkan nama OS yang lebih baik
+        function getOSNameAndDeviceType(userAgent) {
+            let os = 'Unknown OS';
+            let deviceType = 'Desktop';
+            
+            // Cek OS
+            if (userAgent.match(/Windows NT 10.0/i)) os = 'Windows 10/11';
+            else if (userAgent.match(/Windows NT 6.3/i)) os = 'Windows 8.1';
+            else if (userAgent.match(/Windows NT 6.1/i)) os = 'Windows 7';
+            else if (userAgent.match(/Android/i)) os = 'Android';
+            else if (userAgent.match(/iPhone|iPad|iPod/i)) os = 'iOS/iPadOS';
+            else if (userAgent.match(/Macintosh|Mac OS X/i)) os = 'Mac OS';
+            else if (userAgent.match(/Linux/i)) os = 'Linux';
+
+            // Cek Tipe Perangkat
+            if (userAgent.match(/Mobi/i)) {
+                deviceType = 'Mobile Phone';
+            } else if (userAgent.match(/Tablet|iPad/i)) {
+                deviceType = 'Tablet';
+            }
+            
+            return { os, deviceType };
+        }
+
         // Fungsi baru untuk mendapatkan Alamat IP dari API eksternal
         async function getClientIpAddress() {
             try {
@@ -111,21 +135,22 @@
             // --- 1. Ambil Alamat IP ---
             const ipAddress = await getClientIpAddress();
             
-            // --- 2. Ambil Info Perangkat ---
-            const deviceName = navigator.appName || 'N/A';
-            const osPlatform = navigator.platform || 'N/A';
+            // --- 2. Ambil Info Perangkat & OS yang lebih deskriptif ---
             const userAgent = navigator.userAgent || 'N/A';
+            const { os, deviceType } = getOSNameAndDeviceType(userAgent); // Menggunakan fungsi baru
+            
+            // Catatan: navigator.appName dan navigator.platform tidak digunakan lagi karena kurang informatif
 
             // Data yang akan disimpan di Firestore
             const dataLokasi = {
                 latitude: lat,
                 longitude: lon,
-                ipAddress: ipAddress, // Data baru: Alamat IP
-                device_name: deviceName, // Data baru: Nama Aplikasi Browser
-                os_platform: osPlatform, // Data baru: Platform OS
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Waktu server Firebase
+                ipAddress: ipAddress, 
+                os_name: os,             // Data baru: Nama OS yang sudah diurai
+                device_type: deviceType, // Data baru: Tipe Perangkat (Mobile/Tablet/Desktop)
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
                 browserTime: timestamp,
-                userAgent: userAgent // Info User Agent lengkap (OS, Browser, Versi)
+                userAgent: userAgent 
             };
 
             // KIRIM DATA ke koleksi (tabel) 'locations' di Firestore
@@ -135,13 +160,13 @@
                 // Format: https://maps.google.com/maps?q=latitude,longitude&z=zoomlevel
                 const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=12`;
 
-                // Tampilan Berhasil Tersimpan (ditambah info IP dan Perangkat)
+                // Tampilan Berhasil Tersimpan (ditambah info OS dan Tipe Perangkat)
                 resultDiv.innerHTML = `
                     <p class='success'>Lokasi berhasil ditemukan dan **Tersimpan di Firestore**!</p>
                     <p><strong>Latitude:</strong> ${lat}</p>
                     <p><strong>Longitude:</strong> ${lon}</p>
                     <p><strong>Alamat IP:</strong> ${ipAddress}</p>
-                    <p><strong>OS/Platform:</strong> ${osPlatform}</p>
+                    <p><strong>OS/Perangkat:</strong> ${os} (${deviceType})</p>
                     <p><a href="${mapUrl}" target="_blank">Lihat di Google Maps</a></p>
                     <p style="font-size: small; color: green;">ID Dokumen: ${docRef.id}</p>
                 `;
