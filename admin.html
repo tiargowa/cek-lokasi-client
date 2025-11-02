@@ -17,11 +17,7 @@
             margin: 0 auto;
         }
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 20px;
-            padding: 0 10px;
         }
         h1 {
             color: #2c3e50;
@@ -44,7 +40,6 @@
 
         .data-header {
             display: grid;
-            /* Kolom: Waktu (25%), Lokasi/Browser (50%), ID (25%) */
             grid-template-columns: 1.5fr 3fr 1fr;
             padding: 15px 20px;
             background-color: #34495e;
@@ -78,66 +73,29 @@
             color: #e74c3c;
             font-weight: bold;
         }
-
-        /* CSS untuk Autentikasi */
-        #login-container {
-            padding: 50px;
-            margin-top: 50px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #fff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            margin: 50px auto;
-        }
-        .logout-btn {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
     </style>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
-</head>
+    </head>
 <body>
 
     <div class="container">
-        
-        <div id="login-container" style="display: block;">
-            <h2>Admin Dashboard</h2>
-            <p>Akses terbatas. Silakan masuk untuk melihat data.</p>
-            <button id="signInButton" style="background-color: #4285F4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; margin: 0 auto;">
-                <img src="https://img.icons8.com/color/16/000000/google-logo.png" style="margin-right: 10px;">
-                Sign In dengan Google
-            </button>
-        </div>
-        
-        <div id="dashboard-content" style="display: none;">
-            <header>
-                <div>
-                    <h1>Dashboard Admin Lokasi Klien</h1>
-                    <p>Menampilkan semua data lokasi yang tersimpan di Firestore.</p>
-                </div>
-                <button id="signOutButton" class="logout-btn">Logout</button>
-            </header>
+        <header>
+            <h1>Dashboard Admin Lokasi Klien</h1>
+            <p>Menampilkan semua data lokasi yang tersimpan di Firestore (Akses tidak terbatas).</p>
+        </header>
 
-            <div id="history">
-                Memuat data riwayat...
-            </div>
-            
+        <div id="history">
+            Memuat data riwayat...
         </div>
     </div>
 
     <script>
         // KONFIGURASI PROYEK FIREBASE ANDA
         const firebaseConfig = {
-            // 🚨 KUNCI INI HARUS DIGANTI DENGAN KUNCI "Browser key" TERBARU DARI GOOGLE CLOUD CONSOLE
-            apiKey: "AIzaSyDMSnNTL2VnajEWkNY95WEgJVkZB_W7Vng", // ⬅️ GANTI KEY INI!
+            // Kunci ini hanya digunakan untuk akses Firestore (membaca data), bukan Auth/Login.
+            apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng", 
             authDomain: "lokasi-client-tyar.firebaseapp.com",
             projectId: "lokasi-client-tyar",
             storageBucket: "lokasi-client-tyar.appspot.com",
@@ -145,11 +103,9 @@
             appId: "1:53755341759:web:c67c006b9b304c442e97f1"
         };
 
-        // Inisialisasi Firebase, Firestore, dan Auth
+        // Inisialisasi Firebase dan Firestore
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const auth = firebase.auth();
-        const provider = new firebase.auth.GoogleAuthProvider();
         
         // FUNGSI loadHistory: Memuat data dan menampilkan dalam GRID
         function loadHistory() {
@@ -214,53 +170,8 @@
             });
         }
         
-        // Logika Autentikasi
-        auth.onAuthStateChanged((user) => {
-            const dashboardContent = document.getElementById('dashboard-content');
-            const loginContainer = document.getElementById('login-container');
-
-            if (user) {
-                // User sudah login
-                dashboardContent.style.display = 'block';
-                loginContainer.style.display = 'none';
-                
-                // Muat data jika sudah login
-                loadHistory(); 
-
-            } else {
-                // User belum login
-                dashboardContent.style.display = 'none';
-                loginContainer.style.display = 'block';
-            }
-        });
-
-        // Event Listeners untuk Tombol Login/Logout
-        document.addEventListener('DOMContentLoaded', () => {
-            const signInButton = document.getElementById('signInButton');
-            const signOutButton = document.getElementById('signOutButton');
-
-            if (signInButton) {
-                signInButton.addEventListener('click', () => {
-                    // Panggilan ini akan memunculkan pop-up yang meminta Anda Sign In dengan akun Google
-                    auth.signInWithPopup(provider)
-                        .catch((error) => {
-                            // Pesan error di sini: auth/api-key-not-valid
-                            alert("Gagal Login: Firebase: Error (" + error.code + "). Mohon pastikan Kunci API Web Anda sudah benar.");
-                        });
-                });
-            }
-
-            if (signOutButton) {
-                signOutButton.addEventListener('click', () => {
-                    auth.signOut().then(() => {
-                        window.location.reload(); // Muat ulang halaman setelah logout
-                    }).catch((error) => {
-                        console.error("Logout Error:", error);
-                    });
-                });
-            }
-        });
-        
+        // PANGGIL loadHistory SECARA LANGSUNG
+        loadHistory(); 
     </script>
 
 </body>
