@@ -3,91 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Riwayat Lokasi</title>
+    <title>Admin Dashboard Riwayat Lokasi Global</title>
+    <!-- Memuat Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Desain Dasar */
-        body {
-            font-family: 'Inter', Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-            background-color: #f0f4f8;
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Style untuk spinner */
+        .loader {
+            border-top-color: #3b82f6; /* blue-500 */
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
         }
-        h1 {
-            color: #1e3a8a;
-            margin-bottom: 20px;
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
         }
-        /* Kontainer Utama Dashboard */
-        #dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-        }
-
-        /* Riwayat Data (Grid) */
-        #history-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .data-card {
-            background-color: #e0f2f1;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: left;
-            border-left: 5px solid #009688;
-            transition: transform 0.2s;
-        }
-        .data-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .data-card strong {
-            color: #1e3a8a;
-            font-weight: 600;
-        }
-        .data-card p {
-            margin: 5px 0;
-            font-size: 0.95em;
-        }
-        .time-info {
-            font-size: 0.85em;
-            color: #666;
-            margin-top: 10px;
-            border-top: 1px dashed #ccc;
-            padding-top: 5px;
-        }
-        .error {
-            color: #dc3545;
-            font-weight: bold;
-        }
-        .loading {
-             color: #ff9800;
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 
-    <!-- Memuat Firebase versi compat (kompatibel) -->
+    <!-- Memuat Firebase Compatibility (v9) -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
 </head>
-<body>
+<body class="bg-gray-100 p-4 sm:p-8">
 
-    <div id="dashboard-container">
-        <h1>Admin Dashboard Riwayat Lokasi</h1>
+    <!-- Kontainer Utama Dashboard -->
+    <div class="max-w-7xl mx-auto bg-white shadow-2xl rounded-2xl p-6 lg:p-10">
         
-        <!-- Bagian Peta dihilangkan dari sini -->
+        <header class="mb-8 border-b pb-4">
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Dashboard Admin Riwayat Lokasi Client</h1>
+            <p class="text-gray-600">Total <span id="recordCount" class="font-bold text-blue-600">0</span> Lokasi tercatat.</p>
+        </header>
 
-        <h2>Riwayat Data Client</h2>
-        <div id="history-grid" class="loading">Memuat data riwayat...</div>
+        <!-- Area Riwayat Lokasi (Grid Card) -->
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">Riwayat Lokasi</h2>
+        
+        <div id="loading" class="text-center py-10">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4 mx-auto"></div>
+            <p class="text-blue-500 font-semibold">Memuat data dari Firebase...</p>
+        </div>
+        
+        <!-- Kontainer Grid untuk Card Lokasi -->
+        <div id="historyGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+            <!-- Cards akan dimasukkan di sini oleh JavaScript -->
+        </div>
+        
+        <p id="noDataMessage" class="hidden text-center py-10 text-gray-500">Tidak ada data lokasi yang tercatat di Firebase.</p>
+
     </div>
 
     <script>
-        // Konfigurasi Firebase harus sama dengan index.html
+        // PASTIKAN ANDA MENGGANTI INI DENGAN KONFIGURASI PROYEK FIREBASE ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng",
             authDomain: "lokasi-client-tyar.firebaseapp.com",
@@ -96,72 +66,126 @@
             messagingSenderId: "53755341759",
             appId: "1:53755341759:web:c67c006b9b304c442e97f1"
         };
-
+        
         // Inisialisasi Firebase dan Firestore
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        
-        // --- 1. INISIALISASI MAPS (Fungsi dan variabel terkait peta DIBUANG) ---
-        // Fungsi initMap dan variabel map, allMarkers dihapus.
-        
-        // --- 2. MUAT DATA DARI FIRESTORE ---
-        function loadHistory() {
-            const historyDiv = document.getElementById('history-grid');
-            historyDiv.innerHTML = "<p class='loading'>Memuat riwayat dari Firebase...</p>";
 
-            // Query: Ambil 20 data terbaru, diurutkan berdasarkan waktu server
-            db.collection("locations")
-              .orderBy("timestamp", "desc")
-              .limit(20) 
-              .get()
-              .then((querySnapshot) => {
-                let htmlContent = '';
+        // Fungsi untuk memuat data riwayat dari Firestore
+        async function loadHistory() {
+            const historyGrid = document.getElementById('historyGrid');
+            const loadingDiv = document.getElementById('loading');
+            const noDataMessage = document.getElementById('noDataMessage');
+            
+            loadingDiv.classList.remove('hidden');
+            historyGrid.classList.add('hidden');
+            noDataMessage.classList.add('hidden');
+            historyGrid.innerHTML = ''; // Kosongkan grid
+            document.getElementById('recordCount').textContent = '...';
 
-                if (querySnapshot.empty) {
-                    htmlContent = '<p>Tidak ada riwayat lokasi yang ditemukan.</p>';
-                } else {
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        
-                        // Validasi data (penting jika ada dokumen yang tidak lengkap)
-                        if (!data.latitude || !data.longitude || !data.timestamp) return;
+            try {
+                // Ambil data, urutkan berdasarkan waktu server (terbaru di atas)
+                const snapshot = await db.collection("locations").orderBy("timestamp", "desc").get();
+                const locations = [];
 
-                        const pos = { lat: data.latitude, lng: data.longitude };
-                        const formattedLat = pos.lat.toFixed(5);
-                        const formattedLon = pos.lng.toFixed(5);
-                        
-                        // Konversi timestamp
-                        let displayTime = 'N/A';
-                        if (data.timestamp && data.timestamp.toDate) {
-                            displayTime = data.timestamp.toDate().toLocaleString('id-ID', {
-                                dateStyle: 'medium', timeStyle: 'short'
-                            });
-                        }
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    locations.push({ id: doc.id, ...data });
+                });
 
-                        // Konten untuk Grid Riwayat
-                        htmlContent += `
-                            <div class="data-card">
-                                <p><strong>Waktu:</strong> ${displayTime}</p>
-                                <p><strong>Lat/Lon:</strong> ${formattedLat}, ${formattedLon}</p>
-                                <p><strong>IP Address:</strong> ${data.ipAddress || 'N/A'}</p>
-                                <p><strong>Browser:</strong> ${data.browser_name || 'N/A'}</p>
-                                <p><strong>OS:</strong> ${data.os_name || 'N/A'}</p>
-                                <p><strong>Tipe Perangkat:</strong> ${data.device_type || 'N/A'}</p>
-                                <p class="time-info">ID Dokumen: ${doc.id.substring(0, 8)}...</p>
-                                <p><a href="https://maps.google.com/maps?q=${formattedLat},${formattedLon}&z=12" target="_blank" style="color: #007bff; text-decoration: none;">Cek Lokasi di Google Maps</a></p>
-                            </div>
-                        `;
-                    });
+                document.getElementById('recordCount').textContent = locations.length;
+                loadingDiv.classList.add('hidden');
+
+                if (locations.length === 0) {
+                    noDataMessage.classList.remove('hidden');
+                    return;
                 }
-                historyDiv.innerHTML = htmlContent;
-            })
-            .catch((error) => {
-                historyDiv.innerHTML = `<p class='error'>Gagal memuat riwayat: ${error.message}</p>`;
-            });
+
+                historyGrid.classList.remove('hidden');
+
+                locations.forEach(data => {
+                    const lat = data.latitude || 0;
+                    const lon = data.longitude || 0;
+                    const docId = data.id;
+                    
+                    // Konversi Timestamp Firebase ke format waktu yang mudah dibaca
+                    let displayTime = 'N/A';
+                    if (data.timestamp && data.timestamp.toDate) {
+                        displayTime = data.timestamp.toDate().toLocaleString('id-ID', {
+                            year: 'numeric', month: 'short', day: 'numeric',
+                            hour: '2-digit', minute: '2-digit', second: '2-digit'
+                        });
+                    } else if (data.browserTime) {
+                        // Fallback jika server timestamp belum ada (gunakan waktu browser)
+                         displayTime = new Date(data.browserTime).toLocaleString('id-ID');
+                    }
+                    
+                    const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=12`;
+                    
+                    // Buat elemen card
+                    const card = document.createElement('div');
+                    card.id = `card-${docId}`;
+                    card.className = 'bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition duration-300';
+                    
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">${data.cityOrDistrict || 'Lokasi Tidak Diketahui'}</h3>
+                            <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">${data.device_type || 'N/A'}</span>
+                        </div>
+                        
+                        <div class="space-y-2 text-sm text-gray-700">
+                            <!-- Baris Waktu -->
+                            <div class="flex items-center">
+                                <span class="text-gray-500 w-24">Waktu:</span> 
+                                <span class="font-medium">${displayTime}</span>
+                            </div>
+                            
+                            <!-- Baris Alamat -->
+                            <div class="flex items-start">
+                                <span class="text-gray-500 w-24">Alamat:</span>
+                                <span class="flex-1 truncate" title="${data.fullAddress}">${data.fullAddress || 'N/A'}</span>
+                            </div>
+
+                            <!-- Baris Koordinat -->
+                            <div class="flex items-center">
+                                <span class="text-gray-500 w-24">Koordinat:</span> 
+                                <span>${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+                            </div>
+
+                            <!-- Baris IP -->
+                            <div class="flex items-center">
+                                <span class="text-gray-500 w-24">IP:</span> 
+                                <span>${data.ipAddress || 'N/A'}</span>
+                            </div>
+
+                            <!-- Baris Perangkat/OS -->
+                            <div class="flex items-center">
+                                <span class="text-gray-500 w-24">Perangkat:</span> 
+                                <span class="font-light">${data.browser_name || 'N/A'} (${data.os_name || 'N/A'})</span>
+                            </div>
+                        </div>
+
+                        <!-- Aksi -->
+                        <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                            <a href="${mapUrl}" target="_blank" class="inline-flex items-center text-white bg-blue-500 hover:bg-blue-600 font-medium py-2 px-4 rounded-lg transition duration-150 shadow-md text-xs">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                Lihat Maps
+                            </a>
+                        </div>
+                    `;
+                    
+                    historyGrid.appendChild(card);
+                });
+
+            } catch (error) {
+                loadingDiv.classList.add('hidden');
+                noDataMessage.classList.remove('hidden');
+                noDataMessage.innerHTML = `<p class='text-red-600 font-bold'>❌ Gagal memuat riwayat: ${error.message}</p>`;
+                console.error("Error memuat riwayat:", error);
+            }
         }
         
-        // Fungsi loadGoogleMapsScript dihapus
-        // window.onload sekarang memanggil loadHistory() langsung
+        // Panggil fungsi untuk memuat riwayat saat halaman dimuat
         window.onload = loadHistory;
     </script>
 
