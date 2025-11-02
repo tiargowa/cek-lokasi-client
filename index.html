@@ -21,28 +21,6 @@
             to { -webkit-transform: rotate(360deg); }
         }
     </style>
-
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    <script>
-        // ====================================================================
-        // Konfigurasi Kunci API (Disembunyikan)
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
-        // HARAP GANTI DENGAN KUNCI GOOGLE MAPS ANDA YANG SUDAH DIAKTIFKAN GEOCODING API-nya!
-        const GOOGLE_MAPS_API_KEY = "AIzaSyAuObjcNZrJjdfrRN1c-sSwr0qGktoRgDE"; 
-        // ====================================================================
-
-
-        // Inisialisasi Firebase dan Firestore
-        let db;
-        if (Object.keys(firebaseConfig).length > 0) {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-        } else {
-            console.error("Konfigurasi Firebase tidak tersedia.");
-        }
-    </script>
 </head>
 <body class="bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center min-h-screen p-4">
 
@@ -63,14 +41,67 @@
         
         <!-- Area Hasil -->
         <div id="result" class="text-gray-600 text-center min-h-[150px] flex items-center justify-center">
-            Menunggu izin lokasi. Mohon izinkan pop-up browser.
+            Menunggu inisialisasi...
         </div>
         
-        <p class="text-xs text-gray-400 mt-6 text-center border-t pt-4">Firebase Key disembunyikan. Google Maps API Key tetap diperlukan untuk Reverse Geocoding.</p>
+        <p class="text-xs text-gray-400 mt-6 text-center border-t pt-4">Menggunakan **Firebase SDK V9 Modular** dan Otentikasi Anonim.</p>
     </div>
 
-    <script>
+    <script type="module">
+        // Import Firebase V9 Modular SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ====================================================================
+        // Konfigurasi Kunci API dan Variabel Global
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // HARAP GANTI DENGAN KUNCI GOOGLE MAPS ANDA YANG SUDAH DIAKTIFKAN GEOCODING API-nya!
+        const GOOGLE_MAPS_API_KEY = "AIzaSyAuObjcNZrJjdfrRN1c-sSwr0qGktoRgDE"; 
+        // ====================================================================
+
         const resultDiv = document.getElementById('result');
+        let db, auth, userId;
+        // PASTIKAN ANDA MENGGANTI INI DENGAN KONFIGURASI PROYEK FIREBASE ANDA
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng",
+            authDomain: "lokasi-client-tyar.firebaseapp.com",
+            projectId: "lokasi-client-tyar",
+            storageBucket: "lokasi-client-tyar.appspot.com",
+            messagingSenderId: "53755341759",
+            appId: "1:53755341759:web:c67c006b9b304c442e97f1"
+        };
+
+        // Inisialisasi Firebase dan Otentikasi (Mandatory)
+        if (Object.keys(firebaseConfig).length > 0) {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug');
+
+                async function authenticateAndStart() {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    userId = auth.currentUser.uid;
+                    console.log(`Authenticated with userId: ${userId}`);
+                    getLocation();
+                }
+                authenticateAndStart();
+            } catch (error) {
+                console.error("Firebase Initialization or Authentication Error:", error);
+                resultDiv.innerHTML = `<div class='text-red-600 font-semibold p-4 bg-red-100 rounded-xl shadow'>❌ Gagal Inisialisasi/Otentikasi Firebase. Cek konsol.</div>`;
+            }
+        } else {
+            console.error("Konfigurasi Firebase tidak tersedia.");
+            resultDiv.innerHTML = `<div class='text-red-600 font-semibold p-4 bg-red-100 rounded-xl shadow'>❌ Gagal Inisialisasi Firebase. Cek konfigurasi.</div>`;
+        }
 
         // Fungsi untuk mendapatkan Alamat Jalan/Kota dari Lat/Lon (Reverse Geocoding)
         async function getAddressFromLatLng(lat, lng) {
@@ -84,7 +115,7 @@
                 const response = await fetch(url);
 
                 if (!response.ok) {
-                    let errorMessage = `API Error: ${response.status}`;
+                    let errorMessage = `API Error: ${response.status} (Network issue)`;
                     return { fullAddress: errorMessage, cityOrDistrict: 'Error' };
                 }
 
@@ -118,7 +149,7 @@
         // Fungsi utilitas untuk mendapatkan Nama Browser
         function getBrowserName(userAgent) {
             let browser = 'Unknown Browser';
-            if (userAgent.indexOf("Chrome") > -1 && userAgent.indexOf("Edge") === -1) {
+            if (userAgent.indexOf("Chrome") > -1 && userAgent.indexOf("Edge") === -1 && userAgent.indexOf("OPR") === -1) {
                 browser = 'Chrome';
             } else if (userAgent.indexOf("Firefox") > -1) {
                 browser = 'Firefox';
@@ -126,8 +157,8 @@
                 browser = 'Safari';
             } else if (userAgent.indexOf("Edge") > -1) {
                 browser = 'Edge';
-            } else if (userAgent.indexOf("Trident") > -1) {
-                browser = 'Internet Explorer';
+            } else if (userAgent.indexOf("OPR") > -1) {
+                browser = 'Opera';
             }
             return browser;
         }
@@ -138,9 +169,10 @@
             let deviceType = 'Desktop';
             
             // Cek OS
-            if (userAgent.match(/Windows NT 10.0/i)) os = 'Windows 10/11';
+            if (userAgent.match(/Windows NT/i)) os = 'Windows';
             else if (userAgent.match(/Android/i)) os = 'Android';
-            else if (userAgent.match(/iPhone|iPad|iPod/i)) os = 'iOS/iPadOS';
+            else if (userAgent.match(/iPhone|iPod/i)) os = 'iOS';
+            else if (userAgent.match(/iPad/i)) os = 'iPadOS';
             else if (userAgent.match(/Macintosh|Mac OS X/i)) os = 'Mac OS';
             else if (userAgent.match(/Linux/i)) os = 'Linux';
 
@@ -149,6 +181,8 @@
                 deviceType = 'Mobile Phone';
             } else if (userAgent.match(/Tablet|iPad/i)) {
                 deviceType = 'Tablet';
+            } else if (userAgent.match(/A(ndroid)?|WebOS|Tablet|mobile|iP(hone|od)|IEMobile|BlackBerry|Nokia|Kindle|Pad|Silk|Windows Phone/i)) {
+                 deviceType = 'Mobile/Tablet';
             }
             
             return { os, deviceType };
@@ -178,7 +212,7 @@
                 
                 navigator.geolocation.getCurrentPosition(showPosition, showError, {
                     enableHighAccuracy: true, 
-                    timeout: 7000, // Tambah waktu tunggu sedikit
+                    timeout: 7000, 
                     maximumAge: 0
                 });
 
@@ -241,22 +275,26 @@
 
             // Data yang akan disimpan di Firestore
             const dataLokasi = {
+                userId: userId, // User ID yang terotentikasi/anonim
+                appId: appId,   // App ID dari Canvas
                 latitude: lat,
                 longitude: lon,
                 accuracy: accuracy, 
                 ipAddress: ipAddress, 
-                fullAddress: fullAddress,      
+                fullAddress: fullAddress,      
                 cityOrDistrict: cityOrDistrict, 
-                os_name: os,             
+                os_name: os,             
                 device_type: deviceType, 
                 browser_name: browserName, 
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+                timestamp: serverTimestamp(), // Menggunakan fungsi serverTimestamp() dari V9
                 browserTime: timestamp,
                 userAgent: userAgent 
             };
-
-            // KIRIM DATA ke koleksi (tabel) 'locations' di Firestore
-            db.collection("locations").add(dataLokasi)
+            
+            // KIRIM DATA ke koleksi 'locations' di jalur public
+            const locationsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'locations');
+            
+            addDoc(locationsColRef, dataLokasi)
             .then((docRef) => {
                 
                 const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=15`;
@@ -274,7 +312,7 @@
                 } else {
                     accuracyBg = 'bg-red-100 border-red-400';
                     accuracyTextColor = 'text-red-700';
-                    accuracyStatus = 'Rendah (Hanya Berdasarkan IP Address)';
+                    accuracyStatus = 'Rendah (Hanya Berdasarkan Jaringan)';
                 }
 
 
@@ -307,11 +345,14 @@
                             <div class="flex">
                                 <span class="font-semibold text-gray-900 w-28">Perangkat:</span> <span class="flex-1">${browserName} (${deviceType})</span>
                             </div>
+                            <div class="flex">
+                                <span class="font-semibold text-gray-900 w-28">User ID:</span> <span class="flex-1 text-xs break-all">${userId}</span>
+                            </div>
                             
                             <a href="${mapUrl}" target="_blank" class="block w-full text-center mt-5 text-white bg-indigo-500 hover:bg-indigo-600 font-bold py-3 px-4 rounded-xl transition duration-150 shadow-lg hover:shadow-xl">
                                 📍 Lihat Lokasi di Google Maps
                             </a>
-                            <p class="text-xs text-gray-400 pt-2 text-center">ID: ${docRef.id}</p>
+                            <p class="text-xs text-gray-400 pt-2 text-center">Doc ID: ${docRef.id} | App ID: ${appId}</p>
                         </div>
                     </div>
                 `;
@@ -322,7 +363,7 @@
                     <div class="bg-red-50 p-6 rounded-2xl shadow-xl border-l-4 border-red-500 text-left">
                         <p class='text-red-700 font-extrabold text-xl mb-3'>❌ Gagal Menyimpan ke Firebase</p>
                         <p class="text-sm text-gray-700">Error: ${error.message}</p>
-                        <p class="text-xs mt-3 font-semibold">Pastikan koneksi internet dan **Aturan Firestore** sudah diatur ke **'if true'** (jika tidak menggunakan otentikasi).</p>
+                        <p class="text-xs mt-3 font-semibold">Pastikan koneksi internet, **Aturan Firestore** mengizinkan write ke jalur **public**, dan Firebase diinisialisasi dengan benar.</p>
                     </div>
                 `;
             });
@@ -354,14 +395,6 @@
                 </div>
             `;
         }
-        
-        // PANGGIL FUNGSI SAAT HALAMAN DIMUAT (Aksi Otomatis)
-        if (db) {
-             getLocation(); 
-        } else {
-             resultDiv.innerHTML = `<div class='text-red-600 font-semibold p-4 bg-red-100 rounded-xl shadow'>❌ Gagal Inisialisasi Firebase. Cek konfigurasi.</div>`;
-        }
     </script>
-
 </body>
 </html>
