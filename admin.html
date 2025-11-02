@@ -13,7 +13,7 @@
             margin: 0;
         }
         .container {
-            max-width: 1100px; /* Lebar lebih luas untuk grid */
+            max-width: 1100px;
             margin: 0 auto;
         }
         header {
@@ -32,9 +32,7 @@
             margin-bottom: 25px;
         }
         
-        /* ---------------------------------- */
         /* CSS untuk Layout GRID */
-        /* ---------------------------------- */
         #history {
             margin: 30px auto;
             text-align: left;
@@ -65,10 +63,6 @@
         }
         .data-item:last-child {
             border-bottom: none;
-        }
-
-        .time-info {
-            font-size: 0.9em;
         }
         .location-details {
             display: flex;
@@ -142,8 +136,8 @@
     <script>
         // KONFIGURASI PROYEK FIREBASE ANDA
         const firebaseConfig = {
-            // 🚨 GANTI KEY INI DENGAN KUNCI "Browser key" TERBARU DARI GOOGLE CLOUD CONSOLE
-            apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng", // ⬅️ KUNCI INI HARUS DIGANTI!
+            // 🚨 KUNCI INI HARUS DIGANTI DENGAN KUNCI "Browser key" TERBARU DARI GOOGLE CLOUD CONSOLE
+            apiKey: "AIzaSyDMSnNTL2VnajEWkNY95WEgJVkZB_W7Vng", // ⬅️ GANTI KEY INI!
             authDomain: "lokasi-client-tyar.firebaseapp.com",
             projectId: "lokasi-client-tyar",
             storageBucket: "lokasi-client-tyar.appspot.com",
@@ -161,7 +155,7 @@
         function loadHistory() {
             const historyDiv = document.getElementById('history');
             
-            // Tampilan loading awal yang lebih baik
+            // Tampilan loading awal
             historyDiv.innerHTML = '<div class="data-header"><div>Waktu Server</div><div>Lokasi & Browser</div><div>ID Dokumen</div></div><div style="padding: 20px; text-align: center;">Memuat data...</div>';
 
             db.collection("locations").orderBy("timestamp", "desc").get()
@@ -188,8 +182,8 @@
                             });
                         }
 
-                        // URL Google Maps STANDAR yang berfungsi (Fix untuk error 404)
-                        const mapUrl = `http://maps.google.com/?q=${formattedLat},${formattedLon}`;
+                        // URL Google Maps STANDAR yang berfungsi untuk membuka tab baru
+                        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${formattedLat},${formattedLon}`;
                         
                         // MENGGUNAKAN STRUKTUR GRID
                         htmlContent += `
@@ -203,7 +197,7 @@
                                     <span class="link-peta">
                                         (<a href="${mapUrl}" target="_blank">Lihat Peta</a>)
                                     </span>
-                                    <span style="font-size: small; color: #6c757d;">Browser/OS: ${data.userAgent}</span>
+                                    <span style="font-size: small; color: #6c757d;">Browser/OS: ${data.userAgent || 'N/A'}</span>
                                 </div>
                                 
                                 <div class="id-info">
@@ -247,9 +241,10 @@
 
             if (signInButton) {
                 signInButton.addEventListener('click', () => {
+                    // Panggilan ini akan memunculkan pop-up yang meminta Anda Sign In dengan akun Google
                     auth.signInWithPopup(provider)
                         .catch((error) => {
-                            // Error API Key Firebase Anda muncul di sini: auth/api-key-not-valid
+                            // Pesan error di sini: auth/api-key-not-valid
                             alert("Gagal Login: Firebase: Error (" + error.code + "). Mohon pastikan Kunci API Web Anda sudah benar.");
                         });
                 });
