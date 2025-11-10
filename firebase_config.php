@@ -6,12 +6,12 @@ header('Pragma: no-cache');
 
 // Firebase config yang aman - ganti dengan konfigurasi Firebase Anda
 $config = [
-    'apiKey' => getenv('FIREBASE_API_KEY') ?: 'YOUR-FIREBASE-API-KEY',
-    'authDomain' => getenv('FIREBASE_AUTH_DOMAIN') ?: 'YOUR-PROJECT-ID.firebaseapp.com',
-    'projectId' => getenv('FIREBASE_PROJECT_ID') ?: 'YOUR-PROJECT-ID',
-    'storageBucket' => getenv('FIREBASE_STORAGE_BUCKET') ?: 'YOUR-PROJECT-ID.appspot.com',
-    'messagingSenderId' => getenv('FIREBASE_MESSAGING_SENDER_ID') ?: 'YOUR-SENDER-ID',
-    'appId' => getenv('FIREBASE_APP_ID') ?: 'YOUR-APP-ID'
+    'apiKey' => getenv('FIREBASE_API_KEY') ?: 'AIzaSyDMsnNTL2vnajEwkNY59WEgJvKzB_w7Vng',
+    'authDomain' => getenv('FIREBASE_AUTH_DOMAIN') ?: 'lokasi-client-tyar.firebaseapp.com',
+    'projectId' => getenv('FIREBASE_PROJECT_ID') ?: 'lokasi-client-tyar',
+    'storageBucket' => getenv('FIREBASE_STORAGE_BUCKET') ?: 'lokasi-client-tyar.firebasestorage.app',
+    'messagingSenderId' => getenv('FIREBASE_MESSAGING_SENDER_ID') ?: '53755341759',
+    'appId' => getenv('FIREBASE_APP_ID') ?: '1:53755341759:web:31b674d9b032f6e6674f0a'
 ];
 
 echo json_encode($config);
