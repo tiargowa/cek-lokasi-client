@@ -50,11 +50,12 @@
             appId: "1:53755341759:web:c67c006b9b304c442e97f1"
         };
         
-        // ====================================================================
-        // GANTI INI DENGAN KUNCI API GOOGLE MAPS ANDA YANG SEBENARNYA!
-        // Kunci ini didapatkan dari Google Cloud Console dan harus mengaktifkan 'Geocoding API'.
-        const GOOGLE_MAPS_API_KEY = "AIzaSyAuObjcNZrJjdfrRN1c-sSwr0qGktoRgDE"; 
-        // ====================================================================
+    // ====================================================================
+    // CATATAN: Kunci Google Maps (Geocoding) TIDAK BOLEH DILETAKKAN DI KODE CLIENT.
+    // Kita akan memindahkan pemanggilan Geocoding ke endpoint server-side (api_proxy.php)
+    // sehingga API key hanya ada di server. Jangan menyimpan kunci di JavaScript.
+    // (Nilai GOOGLE_MAPS_API_KEY telah dihapus dari sini.)
+    // ====================================================================
 
 
         // Inisialisasi Firebase dan Firestore
@@ -73,44 +74,40 @@
         const resultDiv = document.getElementById('result');
 
         // Fungsi untuk mendapatkan Alamat Jalan/Kota dari Lat/Lon (Reverse Geocoding)
+        // Panggil endpoint server-side untuk melakukan reverse geocoding.
+        // Endpoint `api_proxy.php` menambahkan API key di server dan meneruskan ke Google.
         async function getAddressFromLatLng(lat, lng) {
-            if (GOOGLE_MAPS_API_KEY === "AIzaSyAPunkjI3X0Hq5H8VBJCVlDE9Fjg_LL7Wg") {
-                console.error("GOOGLE_MAPS_API_KEY belum diatur. Reverse Geocoding dilewati.");
-                return { fullAddress: "Error: API Key Belum Diatur", cityOrDistrict: "Error" };
-            }
-
-            const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
-            
             try {
-                const response = await fetch(url);
-                const data = await response.json();
+                const resp = await fetch('api_proxy.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lng, action: 'geocode' })
+                });
 
-                if (data.status === 'OK' && data.results.length > 0) {
-                    // Mengambil alamat yang paling spesifik (biasanya result[0])
+                const data = await resp.json();
+
+                if (data && data.status === 'OK' && data.results && data.results.length > 0) {
                     const fullAddress = data.results[0].formatted_address;
-                    
-                    // Anda bisa mencoba mengambil kota/kabupaten spesifik dari component_address
-                    let cityOrDistrict = fullAddress; // Default ke alamat lengkap
-                    
-                    const components = data.results[0].address_components;
-                    
-                    // Mencari kota/kabupaten
+                    let cityOrDistrict = fullAddress;
+                    const components = data.results[0].address_components || [];
+
                     for (const component of components) {
                         if (component.types.includes("locality")) {
                             cityOrDistrict = component.long_name;
                             break;
                         }
                         if (component.types.includes("administrative_area_level_2")) {
-                            cityOrDistrict = component.long_name; // Level 2 seringkali adalah Kabupaten/Kota
+                            cityOrDistrict = component.long_name;
                         }
                     }
 
                     return { fullAddress, cityOrDistrict };
-                } else {
-                    return { fullAddress: `Geocoding Error: ${data.status}`, cityOrDistrict: 'Tidak Diketahui' };
                 }
+
+                // Jika server mengembalikan error status dari Google atau format tak terduga
+                return { fullAddress: `Geocoding Error: ${data ? (data.status || 'Unknown') : 'No data'}`, cityOrDistrict: 'Tidak Diketahui' };
             } catch (error) {
-                console.error("Gagal melakukan Reverse Geocoding:", error);
+                console.error("Gagal melakukan Reverse Geocoding (via proxy):", error);
                 return { fullAddress: 'Error: Gagal Fetch Geocoding', cityOrDistrict: 'Error' };
             }
         }

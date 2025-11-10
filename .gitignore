@@ -1,0 +1,15 @@
+# Ignore local secret file that contains API keys
+secret_config.php
+
+# Optional local secrets folder (if you keep secrets outside the repo)
+secrets/
+
+# Environment variable files
+.env
+.env.local
+.env.*.local
+
+# OS / editor junk
+.vscode/
+thumbs.db
+desktop.ini
