@@ -35,26 +35,52 @@ Jika Anda ingin menjalankan proyek ini secara lokal:
 
 **(Catatan: Browser modern mungkin memerlukan HTTPS atau `localhost` untuk mengaktifkan Geolocation API. Menjalankan langsung dari file lokal mungkin gagal meminta izin lokasi.)**
 
-## 🔒 Mengamankan API Key (Google Maps Geocoding)
+## 🔒 Mengamankan API Key
 
-Proyek ini sekarang menggunakan endpoint server-side `api_proxy.php` untuk melakukan reverse geocoding sehingga kunci Google Maps tidak perlu langsung ditaruh di JavaScript.
+### Firebase Configuration
 
-Langkah singkat untuk mengamankan kunci:
+Proyek ini menggunakan konfigurasi Firebase yang aman melalui server-side PHP. Untuk mengamankan konfigurasi Firebase Anda:
 
-1. Buat file `secret_config.php` dari `secret_config.example.php` dan isi `$GOOGLE_MAPS_API_KEY` dengan kunci Anda.
-    - Sangat disarankan menempatkan `secret_config.php` di luar webroot (mis. `c:/wamp64/secrets/secret_config.php`) dan sesuaikan `api_proxy.php` untuk meng-include file tersebut.
-    - Alternatif terbaik: set environment variable `GOOGLE_MAPS_API_KEY` di konfigurasi Apache/PHP.
+1. Buat file `firebase_config.php` dengan template berikut:
+    ```php
+    <?php
+    header('Content-Type: application/json');
+    header('Cache-Control: no-store, no-cache, must-revalidate');
 
-2. Jangan commit `secret_config.php` ke git. Tambahkan nama file tersebut ke `.gitignore` jika perlu.
+    $config = [
+        'apiKey' => getenv('FIREBASE_API_KEY') ?: 'YOUR-FIREBASE-API-KEY',
+        'authDomain' => getenv('FIREBASE_AUTH_DOMAIN') ?: 'YOUR-PROJECT-ID.firebaseapp.com',
+        'projectId' => getenv('FIREBASE_PROJECT_ID') ?: 'YOUR-PROJECT-ID',
+        'storageBucket' => getenv('FIREBASE_STORAGE_BUCKET') ?: 'YOUR-PROJECT-ID.appspot.com',
+        'messagingSenderId' => getenv('FIREBASE_MESSAGING_SENDER_ID') ?: 'YOUR-SENDER-ID',
+        'appId' => getenv('FIREBASE_APP_ID') ?: 'YOUR-APP-ID'
+    ];
 
-3. Di Google Cloud Console, batasi penggunaan API key Anda (mis. HTTP referrers atau IP address untuk server) dan aktifkan hanya API yang diperlukan (Geocoding API).
+    echo json_encode($config);
+    ```
 
-4. Jalankan aplikasi via localhost atau server (WAMP). `index.html` sudah diperbarui untuk memanggil `api_proxy.php` yang akan menambahkan API key di server dan meneruskan permintaan ke Google.
+2. Set environment variables di server Anda:
+    - Apache (dalam VirtualHost):
+    ```apache
+    SetEnv FIREBASE_API_KEY "your-api-key"
+    SetEnv FIREBASE_AUTH_DOMAIN "your-project-id.firebaseapp.com"
+    SetEnv FIREBASE_PROJECT_ID "your-project-id"
+    SetEnv FIREBASE_STORAGE_BUCKET "your-project-id.appspot.com"
+    SetEnv FIREBASE_MESSAGING_SENDER_ID "your-sender-id"
+    SetEnv FIREBASE_APP_ID "your-app-id"
+    ```
 
-Contoh file yang ditambahkan:
+3. Pastikan file sensitif tidak masuk git:
+    ```bash
+    echo "firebase_config.php" >> .gitignore
+    ```
 
+4. Batasi akses di Firebase Console:
+    - Atur authorized domains
+    - Batasi akses API berdasarkan domain
+    - Gunakan Firebase Security Rules untuk Firestore
 
-Jika Anda butuh, saya bisa membantu menempatkan `secret_config.php` di luar webroot dan menyesuaikan `api_proxy.php` untuk meng-include path tersebut.
+### Google Maps Configuration
 
 ## 📤 Publish ke Server Git (best practices)
 

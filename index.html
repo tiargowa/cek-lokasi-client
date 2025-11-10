@@ -40,15 +40,29 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     <script>
-        // PASTIKAN ANDA MENGGANTI INI DENGAN KONFIGURASI PROYEK FIREBASE ANDA
-        const firebaseConfig = {
-            apiKey: "AIzaSyDMSnNTL2VnajEWkNY59WEgJVkZB_W7Vng",
-            authDomain: "lokasi-client-tyar.firebaseapp.com",
-            projectId: "lokasi-client-tyar",
-            storageBucket: "lokasi-client-tyar.appspot.com",
-            messagingSenderId: "53755341759",
-            appId: "1:53755341759:web:c67c006b9b304c442e97f1"
-        };
+        // Load Firebase config securely from server
+        let firebaseConfig = null;
+        fetch('firebase_config.php')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(config => {
+            if (!config.apiKey || !config.projectId) {
+                throw new Error('Invalid Firebase configuration');
+            }
+            firebaseConfig = config;
+            // Initialize Firebase only after config is loaded
+            firebase.initializeApp(firebaseConfig);
+            window.db = firebase.firestore();
+        })
+        .catch(error => {
+            console.error("Failed to load Firebase config:", error);
+            document.getElementById('result').innerHTML = 
+                "<p class='error'>Failed to load Firebase configuration. Please check server connection.</p>";
+        });
         
     // ====================================================================
     // CATATAN: Kunci Google Maps (Geocoding) TIDAK BOLEH DILETAKKAN DI KODE CLIENT.
@@ -58,9 +72,7 @@
     // ====================================================================
 
 
-        // Inisialisasi Firebase dan Firestore
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        // Firebase will be initialized after config is loaded from server
     </script>
 </head>
 <body>
@@ -224,7 +236,7 @@
             };
 
             // KIRIM DATA ke koleksi (tabel) 'locations' di Firestore
-            db.collection("locations").add(dataLokasi)
+            window.db.collection("locations").add(dataLokasi)
             .then((docRef) => {
                 
                 const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=12`;
